@@ -49,7 +49,10 @@ public class StoppageTimeGame {
 		});
 		int result = fileChooser.showDialog(null, "Play");
 		if(result == JFileChooser.APPROVE_OPTION){
-			state = new GameState(fileChooser.getSelectedFile());
+			GameState gameState = new GameState(this, fileChooser.getSelectedFile());
+			if(gameState.getScenarioLoaded()){
+				state = gameState;
+			}
 		} else if (result == JFileChooser.ERROR_OPTION){
 			JOptionPane.showMessageDialog(null, "There was an error loading this scenario", "Error", JOptionPane.ERROR_MESSAGE);
 		}
@@ -66,4 +69,5 @@ public class StoppageTimeGame {
 	public void mouseClicked(int x, int y) {
 		state.mouseClicked(x, y);
 	}
+
 }

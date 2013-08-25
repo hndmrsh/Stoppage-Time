@@ -1,0 +1,6 @@
+# a simple scenario of the player attacking from a corner kick
+# pitch (image) size is 512x550
+
+keeper, 1, Manuel, 256, 75
+cpu, 12, Smith, 94, 102
+player, 9, Cunningham, 347, 194
