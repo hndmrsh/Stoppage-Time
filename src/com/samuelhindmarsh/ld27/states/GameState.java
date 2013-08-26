@@ -10,32 +10,41 @@ import java.util.Iterator;
 import java.util.Random;
 
 import com.samuelhindmarsh.ld27.Configuration;
+import com.samuelhindmarsh.ld27.game.Ball;
 import com.samuelhindmarsh.ld27.game.Goalkeeper;
 import com.samuelhindmarsh.ld27.game.Player;
 import com.samuelhindmarsh.ld27.game.StoppageTimeGame;
 import com.samuelhindmarsh.ld27.managers.CommentaryManager;
 import com.samuelhindmarsh.ld27.managers.ImageManager;
 import com.samuelhindmarsh.ld27.managers.ScenarioManager;
+import com.sun.org.apache.xerces.internal.impl.dtd.models.CMAny;
 
 public class GameState implements State {
 
+	private int offset = 25;
+
 	private boolean scenarioLoaded = false;
-	
+
 	private HashSet<Player> playerTeam;
 	private HashSet<Player> cpuTeam;
 	private Goalkeeper keeper;
-	
+	private Ball ball;
+
 	private boolean playerScored = false;
 	private String commentary;
 	private int score;
-	
+	private int secondsElapsed = 0;
+
+	private boolean gameOver = false;
+	private boolean finished = false;
+
 	public GameState(StoppageTimeGame game, File scenario) {
 		playerTeam = new HashSet<Player>();
 		cpuTeam = new HashSet<Player>();
-	
+
 		boolean success = false;
 		try {
-			success = ScenarioManager.parseScenario(scenario, playerTeam, cpuTeam);
+			success = ScenarioManager.parseScenario(scenario, this);
 			for(Player p : cpuTeam){
 				if(p instanceof Goalkeeper){
 					keeper = (Goalkeeper) p;
@@ -46,64 +55,63 @@ public class GameState implements State {
 			// should never happen
 			e.printStackTrace();
 		}
-		
+
 		scenarioLoaded = success;
-		
+
 		commentary = CommentaryManager.getStartMessage();
 		score = new Random().nextInt(4);
 	}
-	
+
 	@Override
 	public void render(Graphics g, int displayWidth, int displayHeight) {
-		int offset = 25;
-		
 		g.setColor(Color.gray);
-		
+
 		// render pitch
 		BufferedImage pitch = ImageManager.getImage("pitch");
+		BufferedImage goal = ImageManager.getImage("goal");
 		g.fillRect(offset-5, offset-5, pitch.getWidth() + 10, pitch.getHeight() + 10);
 		g.drawImage(pitch, offset, offset, pitch.getWidth(), pitch.getHeight(), null);
-		
+
+		if(Configuration.DEBUGGING){ // pitch hitbox
+			g.drawRect(20+offset, 50+offset, 472, 500);
+		}
+		// render goal
+		g.drawImage(goal, offset, offset, goal.getWidth(), goal.getHeight(), null);
+		if(Configuration.DEBUGGING){ // goal hitbox
+			g.drawRect(196+offset, 10+offset, 118, 45);
+		}
+
 		// render players
 		for (Player p : cpuTeam) {
-			g.setColor(Color.red);
-			g.fillOval(offset + p.getX() - (Configuration.PLAYER_SIZE / 2), offset + p.getY() - (Configuration.PLAYER_SIZE / 2), 
-					Configuration.PLAYER_SIZE, Configuration.PLAYER_SIZE);
-			g.setColor(Color.white);
-			g.setFont(ImageManager.getFont(10f));
-			g.drawString(""+p.getNumber(), offset + p.getX() - Configuration.PLAYER_SIZE / 3, offset + p.getY());
-			g.setFont(ImageManager.getFont(8f));
-			g.drawString(""+p.getName(), offset + p.getX() - Configuration.PLAYER_SIZE, offset + p.getY() - Configuration.PLAYER_SIZE / 2);
+			p.render(g, displayWidth, displayHeight, Color.red, offset);
 		}
-		
+
 		for (Player p : playerTeam) {
-			g.setColor(Color.blue);
-			g.fillOval(offset + p.getX() - (Configuration.PLAYER_SIZE / 2), offset + p.getY() - (Configuration.PLAYER_SIZE / 2), 
-					Configuration.PLAYER_SIZE, Configuration.PLAYER_SIZE);
-			g.setColor(Color.white);
-			g.setFont(ImageManager.getFont(10f));
-			g.drawString(""+p.getNumber(), offset + p.getX() - Configuration.PLAYER_SIZE / 3, offset + p.getY());
-			g.setFont(ImageManager.getFont(8f));
-			g.drawString(""+p.getName(), offset + p.getX() - Configuration.PLAYER_SIZE, offset + p.getY() - Configuration.PLAYER_SIZE / 2);
+			p.render(g, displayWidth, displayHeight, Color.blue, offset);
 		}
-		
-		g.setColor(Color.black);
-		g.fillOval(offset + keeper.getX() - (Configuration.PLAYER_SIZE / 2), offset + keeper.getY() - (Configuration.PLAYER_SIZE / 2), 
-				Configuration.PLAYER_SIZE, Configuration.PLAYER_SIZE);
-		g.setColor(Color.white);
-		g.setFont(ImageManager.getFont(10f));
-		g.drawString(""+keeper.getNumber(), offset + keeper.getX() - Configuration.PLAYER_SIZE / 3, offset + keeper.getY());
-		g.setFont(ImageManager.getFont(8f));
-		g.drawString(""+keeper.getName(), offset + keeper.getX() - Configuration.PLAYER_SIZE, offset + keeper.getY() - Configuration.PLAYER_SIZE / 2);
-		
+
+		keeper.render(g, displayWidth, displayHeight, Color.green, offset);
+
+		// render ball
+		ball.render(g, displayWidth, displayHeight, offset);
+
 		// render scoreboard
 		g.setColor(Color.gray);
-		g.fillRect(577, 25, 422, 50);
+		g.fillRect(577, 25, 261, 50);
+		g.fillRect(863, 25, 138, 50);
+
+		g.setFont(ImageManager.getFont(44f));
+		g.setColor(Color.blue);
+		g.drawString(Configuration.PLAYER_ABBREVIATION, 580, 64);
 		g.setColor(Color.white);
-		g.setFont(ImageManager.getFont(52f));
-		String scores = Configuration.PLAYER_ABBREVIATION + " " + (playerScored ? score + 1 : score) + " : " + score + " " + Configuration.CPU_ABBREVIATION;
-		g.drawString(scores, 620, 68);
-		
+		String scores = (playerScored ? score + 1 : score) + ":" + score;
+		g.drawString(scores, 670, 64);
+		g.setColor(Color.red);
+		g.drawString(Configuration.CPU_ABBREVIATION, 750, 64);
+
+		g.setColor(Color.white);
+		g.drawString("92:" + (50 + secondsElapsed), 870, 64);
+
 		// render commentary
 		g.setFont(ImageManager.getFont(16f));
 		g.setColor(Color.gray);
@@ -112,16 +120,59 @@ public class GameState implements State {
 		String[] commentaryLines = commentary.split("%n%");
 		for (int i = 0; i < commentaryLines.length; i++) {
 			String c = commentaryLines[i];
-			g.drawString(c, 582, 540 + i*20);
+			g.drawString(c, 582, 540 + i*20 + 5);
 		}
-				
+
 		g.setFont(ImageManager.getFont(8f));
 	}
 
 	@Override
 	public void update() {
-		// TODO Auto-generated method stub
 
+		ball.update();
+		playerScored = ball.isGoal();
+
+		if(!gameOver && ball.isOut()){
+			commentary = CommentaryManager.getBallOutMessage();
+			gameOver = true;
+		} else if(!gameOver && ball.isGoal()){
+			commentary = CommentaryManager.getPlayerScoresMessage("FAKENAME");
+			gameOver = true;
+		}
+
+		if(!finished && gameOver){
+			finished = true;
+			new Thread(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						Thread.sleep(1500);
+					} catch (InterruptedException e) {
+						// should never happen
+						e.printStackTrace();
+					}
+
+					commentary = CommentaryManager.getFullTimeMessage((playerScored ? Configuration.PLAYER_NAME : Configuration.CPU_NAME));
+
+					if(playerScored){
+						win();
+					} else {
+						lose();
+					}
+				}
+
+			}).start();
+		}
+	}
+
+	private void lose() {
+		// TODO Auto-generated method stub
+		System.out.println("lose");
+	}
+
+	private void win() {
+		// TODO Auto-generated method stub
+		System.out.println("win");
 	}
 
 	@Override
@@ -132,12 +183,26 @@ public class GameState implements State {
 
 	@Override
 	public void mouseClicked(int x, int y) {
-		// TODO Auto-generated method stub
+		if(x > offset && x < offset + 512 && y > offset && y < offset + 550){
+			ball.moveTo(x - offset, y - offset);
+		}
 
 	}
-	
+
 	public boolean getScenarioLoaded() {
 		return scenarioLoaded;
+	}
+
+	public HashSet<Player> getCpuTeam() {
+		return cpuTeam;
+	}
+
+	public HashSet<Player> getPlayerTeam() {
+		return playerTeam;
+	}
+
+	public void setBall(Ball ball) {
+		this.ball = ball;
 	}
 
 }
