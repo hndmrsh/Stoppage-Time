@@ -1,5 +1,6 @@
 package com.samuelhindmarsh.ld27.managers;
 
+import java.awt.Color;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Scanner;
@@ -23,13 +24,13 @@ public class ScenarioManager {
 				String[] tokens = line.split(",");
 
 				if("keeper".equalsIgnoreCase(tokens[0])){
-					state.getCpuTeam().add(parsePlayer(tokens, true));
+					state.getCpuTeam().add(parsePlayer(tokens, Color.green, true));
 					hasGoalkeeper = true;
 				} else if("player".equalsIgnoreCase(tokens[0])){
-					state.getPlayerTeam().add(parsePlayer(tokens, false));
+					state.getPlayerTeam().add(parsePlayer(tokens, Color.blue, false));
 					hasPlayer = true;
 				} else if("cpu".equalsIgnoreCase(tokens[0])){
-					state.getCpuTeam().add(parsePlayer(tokens, false));
+					state.getCpuTeam().add(parsePlayer(tokens, Color.red, false));
 					hasCpu = true;
 				} else if("ball".equalsIgnoreCase(tokens[0])){
 					state.setBall(parseBall(tokens));
@@ -73,16 +74,16 @@ public class ScenarioManager {
 	}
 
 
-	private static Player parsePlayer(String[] tokens, boolean isKeeper){
+	private static Player parsePlayer(String[] tokens, Color colour, boolean isKeeper){
 		int number = Integer.parseInt(tokens[1].trim());
 		String name = tokens[2].trim();
 		int x = Integer.parseInt(tokens[3].trim());
 		int y = Integer.parseInt(tokens[4].trim());
 
 		if(isKeeper){
-			return new Goalkeeper(x, y, number, name);
+			return new Goalkeeper(x, y, number, name, colour);
 		} else {
-			return new Player(x, y, number, name);
+			return new Player(x, y, number, name, colour);
 		}
 
 	}

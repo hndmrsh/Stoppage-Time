@@ -6,39 +6,62 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Random;
+
+import javax.swing.JOptionPane;
 
 import com.samuelhindmarsh.ld27.Configuration;
 import com.samuelhindmarsh.ld27.game.Ball;
 import com.samuelhindmarsh.ld27.game.Goalkeeper;
 import com.samuelhindmarsh.ld27.game.Player;
 import com.samuelhindmarsh.ld27.game.StoppageTimeGame;
+import com.samuelhindmarsh.ld27.instructions.Move;
+import com.samuelhindmarsh.ld27.instructions.Pass;
+import com.samuelhindmarsh.ld27.instructions.Shoot;
+import com.samuelhindmarsh.ld27.instructions.Wait;
 import com.samuelhindmarsh.ld27.managers.CommentaryManager;
 import com.samuelhindmarsh.ld27.managers.ImageManager;
 import com.samuelhindmarsh.ld27.managers.ScenarioManager;
-import com.sun.org.apache.xerces.internal.impl.dtd.models.CMAny;
 
 public class GameState implements State {
+
+	private StoppageTimeGame game;
 
 	private int offset = 25;
 
 	private boolean scenarioLoaded = false;
 
+	private Button[] buttons = {
+			new Button("play", 680, 150),
+			new Button("clear", 880, 150),
+			new Button("wait", 680, 450),
+			new Button("move", 680, 300),
+			new Button("pass", 880, 300),
+			new Button("shoot", 880, 450)
+	};
+
 	private HashSet<Player> playerTeam;
 	private HashSet<Player> cpuTeam;
 	private Goalkeeper keeper;
 	private Ball ball;
+	private Player selectedPlayer;
 
 	private boolean playerScored = false;
 	private String commentary;
 	private int score;
 	private int secondsElapsed = 0;
+	private long startMillis = 0;
 
+	private boolean playing = false;
 	private boolean gameOver = false;
 	private boolean finished = false;
+	private boolean done = false;
+	
+	private String activeMode;
 
 	public GameState(StoppageTimeGame game, File scenario) {
+		this.game = game;
+
 		playerTeam = new HashSet<Player>();
 		cpuTeam = new HashSet<Player>();
 
@@ -54,6 +77,10 @@ public class GameState implements State {
 		} catch (FileNotFoundException e) {
 			// should never happen
 			e.printStackTrace();
+		}
+
+		for(Player p : playerTeam){
+			p.setBall(ball);
 		}
 
 		scenarioLoaded = success;
@@ -83,17 +110,27 @@ public class GameState implements State {
 
 		// render players
 		for (Player p : cpuTeam) {
-			p.render(g, displayWidth, displayHeight, Color.red, offset);
+			p.render(g, displayWidth, displayHeight, offset);
+
 		}
 
 		for (Player p : playerTeam) {
-			p.render(g, displayWidth, displayHeight, Color.blue, offset);
+			p.render(g, displayWidth, displayHeight, offset);
 		}
 
-		keeper.render(g, displayWidth, displayHeight, Color.green, offset);
+		keeper.render(g, displayWidth, displayHeight, offset);
 
 		// render ball
 		ball.render(g, displayWidth, displayHeight, offset);
+
+
+		// render instruction buttons
+		buttons[0].render(g, displayWidth, displayHeight);
+		if(selectedPlayer != null){
+			for(int i = 1; i < buttons.length; i++){
+				buttons[i].render(g, displayWidth, displayHeight);
+			}
+		}
 
 		// render scoreboard
 		g.setColor(Color.gray);
@@ -110,7 +147,11 @@ public class GameState implements State {
 		g.drawString(Configuration.CPU_ABBREVIATION, 750, 64);
 
 		g.setColor(Color.white);
-		g.drawString("92:" + (50 + secondsElapsed), 870, 64);
+		if(secondsElapsed < 0){
+			g.drawString("FT", 905, 64);
+		} else {
+			g.drawString("92:" + (50 + secondsElapsed), 870, 64);	
+		}
 
 		// render commentary
 		g.setFont(ImageManager.getFont(16f));
@@ -129,65 +170,194 @@ public class GameState implements State {
 	@Override
 	public void update() {
 
-		ball.update();
-		playerScored = ball.isGoal();
+		checkButtons();
 
-		if(!gameOver && ball.isOut()){
-			commentary = CommentaryManager.getBallOutMessage();
-			gameOver = true;
-		} else if(!gameOver && ball.isGoal()){
-			commentary = CommentaryManager.getPlayerScoresMessage("FAKENAME");
-			gameOver = true;
-		}
+		if(playing && !finished){
+			secondsElapsed = (int) ((System.currentTimeMillis() - startMillis) / 1000);
 
-		if(!finished && gameOver){
-			finished = true;
-			new Thread(new Runnable() {
-				@Override
-				public void run() {
-					try {
-						Thread.sleep(1500);
-					} catch (InterruptedException e) {
-						// should never happen
-						e.printStackTrace();
+			if(secondsElapsed >= 10){
+				gameOver = true;
+				finished = true;
+				done();
+			}
+
+			ball.update();
+			playerScored = ball.isGoal();
+
+			if(!gameOver && ball.isOut()){
+				commentary = CommentaryManager.getBallOutMessage();
+				gameOver = true;
+			} else if(!gameOver && ball.isGoal()){
+				Player scorer = ball.getLastKicked();
+				if(scorer == null){
+					scorer = ball.getPlayerWithBall();
+				}
+				commentary = CommentaryManager.getPlayerScoresMessage(scorer.getName());
+				gameOver = true;
+			}
+
+			if(!finished && gameOver){
+				finished = true;
+				new Thread(new Runnable() {
+					@Override
+					public void run() {
+						try {
+							Thread.sleep(1500);
+						} catch (InterruptedException e) {
+							// should never happen
+							e.printStackTrace();
+						}
+
+						done();
 					}
 
-					commentary = CommentaryManager.getFullTimeMessage((playerScored ? Configuration.PLAYER_NAME : Configuration.CPU_NAME));
+				}).start();
+			}
 
-					if(playerScored){
-						win();
-					} else {
-						lose();
-					}
+			if(!gameOver){
+				Player playerWithBall = ball.getPlayerWithBall();
+				Player lastKicked = ball.getLastKicked();
+
+				// OK, now check which player is in possession
+				for(Player p : playerTeam){
+					checkForPossession(p);
+					p.update();
 				}
 
-			}).start();
+				// check if CPU tackles
+				for(Player p : cpuTeam){
+					if(checkForPossession(p)){
+						cpuHasBall(p, playerWithBall, lastKicked, false);
+					}
+					p.update();
+				}
+
+				// check if keeper saves
+				if(checkForPossession(keeper)){
+					cpuHasBall(keeper, playerWithBall, lastKicked, true);
+				}
+				keeper.update();
+			}
 		}
 	}
 
-	private void lose() {
-		// TODO Auto-generated method stub
-		System.out.println("lose");
+	private void checkButtons() {
+		activeMode = "";
+
+		if(!playing && buttons[0].isActive()){
+			// playing
+			playing = true;
+			startMillis = System.currentTimeMillis();
+			for(Player p : playerTeam){
+				p.setSelected(false);
+				selectedPlayer = null;
+			}
+		} else if(buttons[1].isActive()){
+			// clear
+			selectedPlayer.getInstructions().clear();
+			buttons[1].setActive(false);
+		} else if(buttons[2].isActive()){
+			int res = -1; 
+			do{
+				try{
+					res = Integer.parseInt(JOptionPane.showInputDialog(null, "How many seconds to wait for?", 1));
+				} catch(NumberFormatException e){
+					// doesn't matter
+				}
+			} while(res < 0);
+			selectedPlayer.queue(new Wait(res));
+			buttons[2].setActive(false);
+		}
+
+		for(int i = 3; i < buttons.length; i++ ){
+			if(buttons[i].isActive()){
+				activeMode = buttons[i].getName();
+			}
+		}
 	}
 
-	private void win() {
-		// TODO Auto-generated method stub
-		System.out.println("win");
+	private void cpuHasBall(Player p, Player playerWithBall, Player lastKicked, boolean keeper){
+		if(keeper){
+			commentary = CommentaryManager.getKeeperSavesMessage(p.getName());
+		} else if(playerWithBall == null){
+			// intercepted a loose ball
+			commentary = CommentaryManager.getCpuInterceptsMessage(p.getName(), lastKicked.getName());
+		} else {
+			commentary = CommentaryManager.getCpuTacklesMessage(p.getName(), playerWithBall.getName());
+		}
+		gameOver = true;
+	}
+
+	private boolean checkForPossession(Player p){
+		if(ball.getPlayerWithBall() != p && ball.getLastKicked() != p && p.intersects(ball)){
+			ball.setPlayerWithBall(p);
+			ball.setLastKicked(null);
+			p.setHasPossession(true);
+			return true;
+		}
+		return false;
+	}
+
+	private void done() {
+		commentary = CommentaryManager.getFullTimeMessage((playerScored ? Configuration.PLAYER_NAME : Configuration.CPU_NAME));
+		secondsElapsed = -1;
+		done = true;
 	}
 
 	@Override
 	public void mouseMoved(int x, int y) {
-		// TODO Auto-generated method stub
-
+		for(Button b : buttons){
+			b.setHovering(b.intersects(x, y));
+		}
 	}
 
 	@Override
 	public void mouseClicked(int x, int y) {
+		if(done){
+			game.reset();
+			return;
+		}
+		
+		// clear everything first
 		if(x > offset && x < offset + 512 && y > offset && y < offset + 550){
-			ball.moveTo(x - offset, y - offset);
+			if(!playing && "".equals(activeMode)){
+				for(Player p : playerTeam){
+					p.setSelected(false);
+				}
+				selectedPlayer = null;
+			} else if("move".equals(activeMode)){
+				selectedPlayer.queue(new Move(x-offset, y-offset));
+			} else if("pass".equals(activeMode)){
+				selectedPlayer.queue(new Pass(x-offset, y-offset));
+			} else if("shoot".equals(activeMode)){
+				selectedPlayer.queue(new Shoot(x-offset, y-offset));
+			}
+		} else {
+			for(Button b : buttons){
+				b.setActive(playing && b.getName().equals("play"));
+			}
 		}
 
+		if(!playing){
+			if(x > offset && x < offset + 512 && y > offset && y < offset + 550){
+				if("".equals(activeMode)){
+					for(Player p : playerTeam){
+						if(p.clickedOn(x-offset, y-offset)){
+							p.setSelected(true);
+							selectedPlayer = p;
+						}
+					}
+				}
+			} else {
+				for(Button b : buttons){
+					if(b.intersects(x, y)){
+						b.setActive(true);
+					}
+				}
+			}
+		}
 	}
+
 
 	public boolean getScenarioLoaded() {
 		return scenarioLoaded;

@@ -18,6 +18,7 @@ import com.samuelhindmarsh.ld27.states.State;
 public class StoppageTimeGame {
 
 	private State state;
+	private File lastLoaded;
 	
 	public StoppageTimeGame() {		
 		state = new MenuState(this);
@@ -49,6 +50,7 @@ public class StoppageTimeGame {
 		});
 		int result = fileChooser.showDialog(null, "Play");
 		if(result == JFileChooser.APPROVE_OPTION){
+			lastLoaded = fileChooser.getSelectedFile();
 			GameState gameState = new GameState(this, fileChooser.getSelectedFile());
 			if(gameState.getScenarioLoaded()){
 				state = gameState;
@@ -68,6 +70,10 @@ public class StoppageTimeGame {
 
 	public void mouseClicked(int x, int y) {
 		state.mouseClicked(x, y);
+	}
+
+	public void reset() {
+		state = new GameState(this, lastLoaded);
 	}
 
 }

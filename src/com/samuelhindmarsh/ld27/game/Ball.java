@@ -3,45 +3,33 @@ package com.samuelhindmarsh.ld27.game;
 import java.awt.Color;
 import java.awt.Graphics;
 
-public class Ball {
+import com.samuelhindmarsh.ld27.instructions.Instruction;
+import com.samuelhindmarsh.ld27.instructions.Move;
 
-	private static final double DECELERATION = -0.02;
+public class Ball extends Actor {
 
-	private	double speed;
-	private double angle;
-
-	private double x, y;
-	private int toX, toY;
-
+	private Player playerWithBall;
+	private Player lastKicked;
+	
 	private boolean isOut, isGoal;
 
 	public Ball(int startX, int startY) {
 		this.x = startX;
 		this.y = startY;
+		this.radius = 6;
 	}
 
 
-	public void moveTo(int x, int y){
-		double x2 = Math.max(this.x, x);
-		double x1 = Math.min(this.x, x);
-		double y2 = Math.max(this.y, y);
-		double y1 = Math.min(this.y, y);
-
-		this.speed = Math.hypot(x2 - x1, y2 - y1) / 50.0;
-		this.angle = Math.toDegrees(Math.atan2(y - this.y, x - this.x));
-		this.toX = x;
-		this.toY = y;
-	}
-
+	@Override
 	public void update(){
+		if(shouldStop()){
+			speed = 0.0;
+		}
+		
 		if(speed > 0.0){
 			x += Math.cos(Math.toRadians(angle)) * speed;
 			y += Math.sin(Math.toRadians(angle)) * speed;
-			speed = Math.max(0.0, speed + DECELERATION);
-		}
-
-		if(shouldStop()){
-			speed  = 0.0;
+			speed = Math.max(0.0, speed - deceleration);
 		}
 
 		checkIfGoal();
@@ -51,43 +39,41 @@ public class Ball {
 
 	private void checkIfGoal() {
 		if(!isGoal && !isOut){
-			isGoal = (x - 6 >= 196 && x + 6 <= 314) && (y - 6 > 10 && y + 6 < 55);
+			isGoal = (x - radius >= 196 && x + radius <= 314) && (y - radius > 10 && y + radius < 55);
 		}
 	}
 
 
 	private void checkIfOut() {
 		if(!isGoal && !isOut){
-			isOut = (x+6 < 20 || x-6 > 492 || (y+6 < 55 || y-6 > 500));
+			isOut = (x+radius < 20 || x-radius > 492 || (y+radius < 55 || y-radius > 500));
 		}
 
 	}
 
 
 	private boolean shouldStop() {
-		if(x - 6 < 0 || y - 6 < 0 || x + 6 > 512 || y + 6> 550){
+		if(playerWithBall != null){
 			return true;
-		} else if(isGoal && (y - 6 > 10 && y + 6 < 55) && (x - 6 < 196 || x + 6 > 314)){
+		} else if(x - radius < 0 || y - radius < 0 || x + radius > 512 || y + radius> 550){
 			return true;
-		} else if(isOut && (y + 6 > 10 && y - 6 < 55) && (x + 6 > 196 && x - 6 < 314)){
+		} else if(isGoal && (y - radius > 10 && y + radius < 55) && (x - radius < 196 || x + radius > 314)){
 			return true;
-		} else if((x - 6 >= 196 && x + 6 <= 314) && (y - 6 < 10)){
+		} else if(isOut && (y + radius > 10 && y - radius < 55) && (x + radius > 196 && x - radius < 314)){
+			return true;
+		} else if((x - radius >= 196 && x + radius <= 314) && (y - radius < 10)){
 			return true;
 		}
 		return false;
 	}
 
 
+	@Override
 	public void render(Graphics g, int displayWidth, int displayHeight, int offset){
 		g.setColor(Color.white);
-		g.fillOval((int)x-6+offset, (int)y-6+offset, 12, 12);
+		g.fillOval((int)x-radius+offset, (int)y-radius+offset, 2*radius, 2*radius);
 		g.setColor(Color.black);
-		g.drawOval((int)x-6+offset, (int)y-6+offset, 12, 12);
-
-		if(speed > 0.0){
-			g.setColor(Color.white);
-			g.drawLine((int)x+offset,(int) y+offset, (int)toX + offset, (int)toY + offset);
-		}
+		g.drawOval((int)x-radius+offset, (int)y-radius+offset, 2*radius, 2*radius);
 	}
 
 	public boolean isGoal() {
@@ -97,5 +83,28 @@ public class Ball {
 	public boolean isOut() {
 		return isOut;
 	}
+
+	public Player getPlayerWithBall() {
+		return playerWithBall;
+	}
+
+	public void setPlayerWithBall(Player playerWithBall) {
+		this.playerWithBall = playerWithBall;
+	}
+	
+	public Player getLastKicked() {
+		return lastKicked;
+	}
+	
+	public void setLastKicked(Player lastKicked) {
+		this.lastKicked = lastKicked;
+	}
+	
+	public void moveTo(int x, int y, boolean shot) {
+		this.speed = Math.hypot(this.x - x, this.y - y) / (shot ? 20.0 : 50.0);
+		this.deceleration = speed / 180.0;
+		this.angle = Math.toDegrees(Math.atan2(y - this.y, x - this.x));
+	}
+	
 
 }

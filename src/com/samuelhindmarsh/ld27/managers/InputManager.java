@@ -26,7 +26,7 @@ public class InputManager implements MouseListener, MouseMotionListener, KeyList
 
 
 	@Override
-	public void mouseClicked(MouseEvent e) {
+	public void mouseReleased(MouseEvent e) {
 		game.mouseClicked(e.getX(), e.getY());
 	}
 
@@ -61,7 +61,7 @@ public class InputManager implements MouseListener, MouseMotionListener, KeyList
 	public void mousePressed(MouseEvent arg0) {}
 
 	@Override
-	public void mouseReleased(MouseEvent arg0) {}
+	public void mouseClicked(MouseEvent arg0) {}
 
 
 	@Override

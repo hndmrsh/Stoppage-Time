@@ -14,7 +14,7 @@ public class CommentaryManager {
 	};
 
 	private static String[] playerScores = {
-		"%player% scores! " + Configuration.PLAYER_NAME + " will surely win the league!",
+		"%player% scores! " + Configuration.PLAYER_NAME + " will surely%n%win the league!",
 		"Great goal by %player% for " + Configuration.PLAYER_NAME + "!"
 	};
 
@@ -24,9 +24,19 @@ public class CommentaryManager {
 	};
 
 	private static String[] cpuIntercepts = {
-		"%cpu% clears the ball, and " + Configuration.CPU_NAME + " have surely won the league.",
-		"The ball is intercepted, and that's surely it for " + Configuration.PLAYER_NAME,
-		"Bad pass from %player%, and %cpu% clears"
+		"%cpu% clears the ball, and " + Configuration.CPU_NAME + "%n%have surely won the league.",
+		"The ball is intercepted, and that's surely%n%it for " + Configuration.PLAYER_NAME,
+		"That's a bad pass, and %cpu% will clear"
+	};
+	
+	private static String[] keeperSaves = {
+		"%cpu% collects the ball. " + Configuration.CPU_NAME + " have%n%surely won it now!",
+		"Great save by %cpu% for " + Configuration.CPU_NAME
+	};
+	
+	private static String[] cpuTackles = {
+		"Great tackle by %cpu% on %player%,%n%and that's surely the game.",
+		"That's a big tackle by %cpu%. " + Configuration.CPU_NAME + "%n%must hold on now!"
 	};
 
 	private static String[] ballOut = {
@@ -56,9 +66,14 @@ public class CommentaryManager {
 		return msg.replace("%from%", fromPlayer).replace("%to%", toPlayer);
 	}
 
-	public static String getCpuInterceptsMessage(String fromPlayer, String cpuPlayer){
+	public static String getCpuInterceptsMessage(String cpuPlayer, String lastKicked){
 		String msg = cpuIntercepts[new Random().nextInt(cpuIntercepts.length)];
-		return msg.replace("%player%", fromPlayer).replace("%cpu%", cpuPlayer);
+		return msg.replace("%cpu%", cpuPlayer).replace("%player%", lastKicked);
+	}
+	
+	public static String getKeeperSavesMessage(String keeper){
+		String msg = keeperSaves[new Random().nextInt(keeperSaves.length)];
+		return msg.replace("%cpu%", keeper);
 	}
 
 	public static String getFullTimeMessage(String winningTeam){
@@ -68,5 +83,10 @@ public class CommentaryManager {
 
 	public static String getBallOutMessage(){
 		return ballOut[new Random().nextInt(ballOut.length)];
+	}
+
+	public static String getCpuTacklesMessage(String name, String playerWithBall) {
+		String msg = cpuTackles[new Random().nextInt(cpuTackles.length)];
+		return msg.replace("%player%", playerWithBall).replace("%cpu%", name);
 	}
 }

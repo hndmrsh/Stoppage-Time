@@ -9,7 +9,6 @@ public class Configuration {
 
 	public static int WIDTH = 1024;
 	public static int HEIGHT = 600;
-	public static int PLAYER_SIZE = 20;
 
 	public static String SCENARIO_FILE_EXTENSION = ".scn";
 

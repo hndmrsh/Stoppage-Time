@@ -12,7 +12,6 @@ import com.samuelhindmarsh.ld27.managers.ImageManager;
 public class MenuState implements State {
 
 	private StoppageTimeGame game;
-	private int mouseX = 0, mouseY = 0;
 	private Button play;
 	private Button exit;
 
@@ -39,55 +38,20 @@ public class MenuState implements State {
 
 	@Override
 	public void mouseMoved(int x, int y) {
-		this.mouseX = x;
-		this.mouseY = y;
+		play.setHovering(play.intersects(x, y));
+		exit.setHovering(exit.intersects(x, y));
 	}
 	
 	public void mouseClicked(int x, int y){
 		if(play.intersects(x, y)){
+			play.setActive(true);
 			game.newGame();
 		} else if(exit.intersects(x, y)){
+			exit.setActive(true);
 			game.exit();
 		}
 	}
 
-	private class Button {
-		private String name;
-		private int x, y;
-		private int width, height;
-
-		public Button(String name, int x, int y) {
-			this.name = name;
-
-			BufferedImage img = ImageManager.getImage(name);
-			width = img.getWidth();
-			height = img.getHeight();
-
-			this.x = x - (width/2);
-			this.y = y - (height/2);
-
-
-		}
-
-		public boolean intersects(int x, int y){
-			return (x > this.x && x <= this.x + width) && (y > this.y && y <= this.y + height);
-		}
-
-		public void render(Graphics g, int displayWidth, int displayHeight){
-			BufferedImage img = null;
-			if(intersects(MenuState.this.mouseX, MenuState.this.mouseY)){
-				img = ImageManager.getImage(name + "-hover");
-			} else {
-				img = ImageManager.getImage(name);
-			}
-
-			g.drawImage(img, x, y, width, height, null);
-			if(Configuration.DEBUGGING){
-				g.setColor(Color.green);
-				g.drawRect(x, y, width, height);
-			}
-		}
-
-	}
+	
 
 }
