@@ -1,5 +1,5 @@
 # a simple scenario of the player attacking from a corner kick
-# pitch (image) size is 512x550
+# pitch size is 512x550
 
 ball, 45, 75
 
@@ -7,6 +7,7 @@ keeper, 1, Manuel, 256, 75
 cpu, 2, Sonderoff, 305, 72
 cpu, 5, Ro, 135, 177
 cpu, 11, Cadilla, 289, 178
+cpu, 13, Oppo, 284, 147
 cpu, 24, Cord, 389, 121
 cpu, 6, Smith, 94, 102
 

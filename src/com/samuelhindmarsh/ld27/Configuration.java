@@ -3,7 +3,7 @@ package com.samuelhindmarsh.ld27;
 
 public class Configuration {
 
-	public static boolean DEBUGGING = true;
+	public static boolean DEBUGGING = false;
 
 	public static int FRAMERATE = 60;
 

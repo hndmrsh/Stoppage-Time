@@ -18,31 +18,30 @@ import com.samuelhindmarsh.ld27.states.State;
 public class StoppageTimeGame {
 
 	private State state;
-	private File lastLoaded;
-	
-	public StoppageTimeGame() {		
+
+	public StoppageTimeGame() {
 		state = new MenuState(this);
 	}
-	
+
 	public void render(Graphics g, int displayWidth, int displayHeight){
 		g.drawImage(ImageManager.getImage("bg"), 0, 0, displayWidth, displayHeight, null);
 		state.render(g, displayWidth, displayHeight);
 	}
-	
+
 	public void update(){
 		state.update();
 	}
-	
+
 	public void newGame(){
 		JFileChooser fileChooser = new JFileChooser("scenarios");
 		fileChooser.setDialogTitle("Choose a scenario to play");
 		fileChooser.setFileFilter(new FileFilter() {
-			
+
 			@Override
 			public String getDescription() {
 				return "Scenario files (" + Configuration.SCENARIO_FILE_EXTENSION + ")";
 			}
-			
+
 			@Override
 			public boolean accept(File f) {
 				return f.getName().endsWith(Configuration.SCENARIO_FILE_EXTENSION);
@@ -50,7 +49,6 @@ public class StoppageTimeGame {
 		});
 		int result = fileChooser.showDialog(null, "Play");
 		if(result == JFileChooser.APPROVE_OPTION){
-			lastLoaded = fileChooser.getSelectedFile();
 			GameState gameState = new GameState(this, fileChooser.getSelectedFile());
 			if(gameState.getScenarioLoaded()){
 				state = gameState;
@@ -59,21 +57,27 @@ public class StoppageTimeGame {
 			JOptionPane.showMessageDialog(null, "There was an error loading this scenario", "Error", JOptionPane.ERROR_MESSAGE);
 		}
 	}
-	
+
 	public void exit(){
 		System.exit(0);
 	}
-	
+
 	public void mouseMoved(int x, int y){
 		state.mouseMoved(x, y);
 	}
 
-	public void mouseClicked(int x, int y) {
-		state.mouseClicked(x, y);
+	public void mouseClicked(int x, int y, boolean rightClick){
+		state.mouseClicked(x, y, rightClick);
 	}
 
 	public void reset() {
-		state = new GameState(this, lastLoaded);
+		state = new MenuState(this);
+	}
+
+	public void resetRequested() {
+		if(state instanceof GameState){
+			((GameState) state).reset();
+		}
 	}
 
 }

@@ -10,12 +10,13 @@ public class Ball extends Actor {
 
 	private Player playerWithBall;
 	private Player lastKicked;
-	
+
 	private boolean isOut, isGoal;
 
+	private double toX;
+
 	public Ball(int startX, int startY) {
-		this.x = startX;
-		this.y = startY;
+		super(startX, startY);
 		this.radius = 6;
 	}
 
@@ -25,7 +26,7 @@ public class Ball extends Actor {
 		if(shouldStop()){
 			speed = 0.0;
 		}
-		
+
 		if(speed > 0.0){
 			x += Math.cos(Math.toRadians(angle)) * speed;
 			y += Math.sin(Math.toRadians(angle)) * speed;
@@ -91,20 +92,35 @@ public class Ball extends Actor {
 	public void setPlayerWithBall(Player playerWithBall) {
 		this.playerWithBall = playerWithBall;
 	}
-	
+
 	public Player getLastKicked() {
 		return lastKicked;
 	}
-	
+
 	public void setLastKicked(Player lastKicked) {
 		this.lastKicked = lastKicked;
 	}
-	
+
 	public void moveTo(int x, int y, boolean shot) {
-		this.speed = Math.hypot(this.x - x, this.y - y) / (shot ? 20.0 : 50.0);
+		this.speed = Math.min(7.0, Math.hypot(this.x - x, this.y - y) / (shot ? 20.0 : 60.0)); // cap ball speed at 7
+		this.toX = x;
 		this.deceleration = speed / 180.0;
 		this.angle = Math.toDegrees(Math.atan2(y - this.y, x - this.x));
 	}
-	
 
+	@Override
+	public void reset() {
+		this.x = this.initialX;
+		this.y = this.initialY;
+		this.angle = 0.0;
+		this.deceleration = 0.0;
+		this.isGoal = false;
+		this.isOut = false;
+		this.lastKicked = null;
+		this.playerWithBall = null;
+	}
+
+	public double getToX() {
+		return toX;
+	}
 }

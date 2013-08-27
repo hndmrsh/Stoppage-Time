@@ -1,0 +1,18 @@
+# a simple scenario of the player attacking from a corner kick
+# pitch size is 512x550
+
+ball, 154, 232
+
+keeper, 1, D'ambrosio, 256, 75
+cpu, 12, D'amore, 135, 177
+cpu, 5, Arena, 145, 179
+cpu, 11, Van Dael, 155, 181
+cpu, 3, Köhl, 165, 183
+cpu, 2, Chowdhury, 300, 76
+cpu, 24, Lèmmi, 227, 91
+
+
+player, 7, Van Dael, 157, 234
+player, 12, Goffe, 402, 214
+player, 19, Scott, 302, 151
+player, 9, Ueno, 60, 145

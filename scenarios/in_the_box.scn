@@ -1,0 +1,20 @@
+# a simple scenario of the player attacking from a corner kick
+# pitch size is 512x550
+
+ball, 327, 234
+
+keeper, 1, Baines, 227, 75
+cpu, 17, Karim, 139, 89
+cpu, 21, Takala, 306, 69
+cpu, 12, Trapani, 341, 138
+cpu, 30, Soares, 149, 133
+cpu, 4, Fitzpatrick, 374, 105
+cpu, 22, Rooijakker, 319, 157
+
+
+player, 4, Escarrà, 163, 74
+player, 19, McNiadh, 123, 115
+player, 23, Zilberschlag, 202, 149
+player, 14, Durand, 336, 89
+player, 8, Chalupnik, 374, 155
+player, 10, Lobo, 329, 229

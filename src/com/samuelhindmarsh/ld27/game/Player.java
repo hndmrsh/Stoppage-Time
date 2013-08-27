@@ -4,11 +4,13 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.Set;
 
 import com.samuelhindmarsh.ld27.Configuration;
 import com.samuelhindmarsh.ld27.instructions.Instruction;
 import com.samuelhindmarsh.ld27.instructions.Move;
 import com.samuelhindmarsh.ld27.instructions.Pass;
+import com.samuelhindmarsh.ld27.instructions.Shoot;
 import com.samuelhindmarsh.ld27.instructions.Wait;
 import com.samuelhindmarsh.ld27.managers.ImageManager;
 
@@ -20,7 +22,7 @@ public class Player extends Actor {
 	private String name;
 	private Color colour;
 
-	private Ball ball;
+	protected Ball ball;
 
 	private boolean hasPossession;
 	private Instruction currentInstruction;
@@ -30,14 +32,16 @@ public class Player extends Actor {
 	private boolean moving;
 
 	private int wait = 0;
-	
+
 	private double toX, toY;
 
+
 	Queue<Instruction> instructions = new LinkedList<Instruction>();
+	Queue<Instruction> doneInstructions = new LinkedList<Instruction>();
+
 
 	public Player(int x, int y, int number, String name, Color c) {
-		this.x = x;
-		this.y = y;
+		super(x, y);
 		this.colour = c;
 		this.radius = 10;
 		this.number = number;
@@ -117,6 +121,7 @@ public class Player extends Actor {
 
 		if (instructions.size() > 0 && (currentInstruction == null || currentInstruction.isComplete())) {
 			currentInstruction = instructions.poll();
+			doneInstructions.add(currentInstruction);
 			currentInstruction.execute(this, ball);
 		}
 
@@ -125,8 +130,8 @@ public class Player extends Actor {
 		} else if(currentInstruction instanceof Wait){
 			currentInstruction.setComplete(true);
 		}
-		
-		
+
+
 		if (moving) {
 			double dX = Math.cos(Math.toRadians(angle)) * speed;
 			double dY = Math.sin(Math.toRadians(angle)) * speed;
@@ -140,18 +145,22 @@ public class Player extends Actor {
 				x = toX;
 				y = toY;
 				moving = false;
-				currentInstruction.setComplete(true);
+				if(currentInstruction != null){
+					currentInstruction.setComplete(true);
+				}
 			}
 		}
 
-		if(currentInstruction instanceof Pass && !currentInstruction.isComplete()){
+		if((currentInstruction instanceof Pass || currentInstruction instanceof Shoot) && !currentInstruction.isComplete()){
 			currentInstruction.execute(this, ball);
 		}
 	}
 
 	public boolean clickedOn(int x, int y) {
 		double dist = Math.hypot(this.x - x, this.y - y);
-		System.out.println(dist + "");
+		if(Configuration.DEBUGGING){
+			System.out.println(dist + "");
+		}
 		return dist < radius;
 	}
 
@@ -171,21 +180,47 @@ public class Player extends Actor {
 		instructions.offer(i);
 	}
 
-	public void moveTo(double x, double y, Instruction instructionCallback) {
+	public void moveTo(double x, double y, double speed) {
 		this.toX = x;
 		this.toY = y;
+		this.speed = speed;
 		angle = Math.toDegrees(Math.atan2(this.toY - this.y, this.toX - this.x));
-		speed = 1.0;
 		deceleration = 0.0;
-		this.instructionCallback = instructionCallback;
 		moving = true;
 	}
 
 	public Queue<Instruction> getInstructions() {
 		return instructions;
 	}
-	
+
 	public void setWait(int wait) {
 		this.wait = wait;
 	}
+
+	@Override
+	public void reset() {
+		while(!instructions.isEmpty()){
+			doneInstructions.offer(instructions.poll());
+		}
+		while(!doneInstructions.isEmpty()){
+			Instruction i = doneInstructions.poll();
+			i.reset();
+			queue(i);
+		}
+
+		this.hasPossession = false;
+		this.currentInstruction = null;
+		this.moving = false;
+		this.toX = 0.0;
+		this.toY = 0.0;
+		this.x = initialX;
+		this.y = initialY;
+		this.playing = false;
+	}
+
+
+	public void setMoving(boolean moving) {
+		this.moving = moving;
+	}
+
 }

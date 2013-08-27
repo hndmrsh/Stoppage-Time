@@ -24,7 +24,7 @@ public class MenuState implements State {
 	@Override
 	public void render(Graphics g, int displayWidth, int displayHeight) {
 		BufferedImage title = ImageManager.getImage("title");
-		g.drawImage(title, (displayWidth - title.getWidth()) / 2, displayHeight / 20, title.getWidth(), title.getHeight(), null); 
+		g.drawImage(title, (displayWidth - title.getWidth()) / 2, displayHeight / 20, title.getWidth(), title.getHeight(), null);
 
 		play.render(g, displayWidth, displayHeight);
 		exit.render(g, displayWidth, displayHeight);
@@ -41,8 +41,8 @@ public class MenuState implements State {
 		play.setHovering(play.intersects(x, y));
 		exit.setHovering(exit.intersects(x, y));
 	}
-	
-	public void mouseClicked(int x, int y){
+
+	public void mouseClicked(int x, int y, boolean rightClick){
 		if(play.intersects(x, y)){
 			play.setActive(true);
 			game.newGame();
@@ -52,6 +52,6 @@ public class MenuState implements State {
 		}
 	}
 
-	
+
 
 }

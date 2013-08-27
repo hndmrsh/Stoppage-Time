@@ -10,12 +10,12 @@ import com.samuelhindmarsh.ld27.managers.ImageManager;
 public interface State {
 
 	public void render(Graphics g, int displayWidth, int displayHeight);
-	
+
 	public void update();
 
 	public void mouseMoved(int x, int y);
-	
-	public void mouseClicked(int x, int y);
+
+	public void mouseClicked(int x, int y, boolean rightClick);
 
 	public class Button {
 		private String name;
@@ -23,7 +23,7 @@ public interface State {
 		private int width, height;
 		private boolean hovering;
 		private boolean active;
-		
+
 		public Button(String name, int x, int y) {
 			this.name = name;
 
@@ -62,11 +62,11 @@ public interface State {
 			this.hovering = hovering;
 		}
 
-		
+
 		public void setActive(boolean active) {
 			this.active = active;
 		}
-		
+
 		public boolean isActive() {
 			return active;
 		}

@@ -1,0 +1,19 @@
+# a simple scenario of the player attacking from a corner kick
+# pitch size is 512x550
+
+ball, 127, 441
+
+keeper, 1, Rezník, 256, 75
+cpu, 17, Beirne, 110, 266
+cpu, 21, Oliver, 159, 391
+cpu, 12, Ó Ruaidh, 351, 137
+cpu, 30, Thrussell, 156, 131
+cpu, 4, Gereben, 312, 293
+cpu, 22, Hines, 451, 180
+
+
+player, 3, Fábián, 129, 440
+player, 18, Sokoloff, 191, 287
+player, 14, Geiszler, 426, 279
+player, 9, Lynn, 98, 174
+player, 7, Protz, 363, 453

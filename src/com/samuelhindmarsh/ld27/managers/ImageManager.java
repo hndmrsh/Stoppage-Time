@@ -12,19 +12,19 @@ import javax.imageio.ImageIO;
 public class ImageManager {
 
 	private static Font font;
-	
+
 	private static HashMap<String, BufferedImage> images = new HashMap<String, BufferedImage>();
 	private static HashMap<Float, Font> fonts = new HashMap<Float, Font>();
-	
+
 	public static BufferedImage getImage(String imageName){
 		BufferedImage cachedImg = images.get(imageName);
 		if(images.containsKey(imageName)){
 			return cachedImg;
 		}
-		
+
 		String fileName = "img" + File.separator + imageName + ".png";
 		File f = new File(fileName);
-		
+
 		BufferedImage img = null;
 		try {
 			img = ImageIO.read(f);
@@ -32,11 +32,11 @@ public class ImageManager {
 			System.err.println("Couldn't read image with name: " + fileName);
 			e.printStackTrace();
 		}
-		
+
 		images.put(imageName, img);
 		return img;
 	}
-	
+
 	public static Font getFont(float size){
 		if(font == null){
 			try {
@@ -45,13 +45,13 @@ public class ImageManager {
 				e.printStackTrace();
 			}
 		}
-		
+
 		if(font != null && !fonts.containsKey(size)){
 			Font scaledFont = font.deriveFont(size);
 			fonts.put(size, scaledFont);
 		}
-		
+
 		return fonts.get(size);
 	}
-	
+
 }

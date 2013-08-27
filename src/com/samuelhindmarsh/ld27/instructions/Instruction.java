@@ -7,7 +7,7 @@ import com.samuelhindmarsh.ld27.game.Player;
 
 public abstract class Instruction {
 
-	protected int x, y; 
+	protected int x, y;
 	protected boolean complete;
 
 	public Instruction(int x, int y) {
@@ -30,6 +30,10 @@ public abstract class Instruction {
 
 	public void setComplete(boolean complete) {
 		this.complete = complete;
+	}
+
+	public void reset(){
+		this.complete = false;
 	}
 
 	public abstract void execute(Player p, Ball b);

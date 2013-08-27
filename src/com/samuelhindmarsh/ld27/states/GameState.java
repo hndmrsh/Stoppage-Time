@@ -5,8 +5,12 @@ import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 import javax.swing.JOptionPane;
 
@@ -56,7 +60,7 @@ public class GameState implements State {
 	private boolean gameOver = false;
 	private boolean finished = false;
 	private boolean done = false;
-	
+
 	private String activeMode;
 
 	public GameState(StoppageTimeGame game, File scenario) {
@@ -82,6 +86,10 @@ public class GameState implements State {
 		for(Player p : playerTeam){
 			p.setBall(ball);
 		}
+		for(Player p : cpuTeam){
+			p.setBall(ball);
+		}
+		keeper.setBall(ball);
 
 		scenarioLoaded = success;
 
@@ -150,7 +158,7 @@ public class GameState implements State {
 		if(secondsElapsed < 0){
 			g.drawString("FT", 905, 64);
 		} else {
-			g.drawString("92:" + (50 + secondsElapsed), 870, 64);	
+			g.drawString("92:" + (50 + secondsElapsed), 870, 64);
 		}
 
 		// render commentary
@@ -218,6 +226,8 @@ public class GameState implements State {
 				Player playerWithBall = ball.getPlayerWithBall();
 				Player lastKicked = ball.getLastKicked();
 
+				applyAi();
+
 				// OK, now check which player is in possession
 				for(Player p : playerTeam){
 					checkForPossession(p);
@@ -241,6 +251,66 @@ public class GameState implements State {
 		}
 	}
 
+	private void applyAi() {
+		// first, clear existing movements
+		for(Player p : cpuTeam){
+			p.setMoving(false);
+		}
+
+		if(ball.getPlayerWithBall() == null){
+			keeper.moveTo(Math.min(304, Math.max(206, ball.getToX())), keeper.getY(), 1.4);
+		} else {
+			keeper.moveTo(Math.min(304, Math.max(206, ball.getX())), keeper.getY(), 1.4);
+		}
+
+		// determine free players
+		Set<Player> freeTacklers = new HashSet<Player>(cpuTeam);
+
+		// find the closest player to ball and move to it
+		Player closestToBall = null;
+		for(Player p : cpuTeam){
+			if(closestToBall == null || p.distTo(ball) < closestToBall.distTo(ball)){
+				closestToBall = p;
+			}
+		}
+
+		closestToBall.moveTo(ball.getX(), ball.getY(), 0.9);
+		freeTacklers.remove(closestToBall);
+
+		// mark all human players not in possession
+		for(Player p : playerTeam){
+			if(!p.hasPossession()){
+				// find closest CPU player to mark this player
+				Player closestToPlayer = null;
+				for(Player cpu : freeTacklers){
+					if(closestToPlayer == null || cpu.distTo(p) < closestToPlayer.distTo(p)){
+						closestToPlayer = cpu;
+					}
+				}
+
+				if(closestToPlayer != null){ // could be null if not enough CPU players to mark the human players
+					closestToPlayer.moveTo(p.getX() - 3, p.getY() - 3, 0.9);
+					freeTacklers.remove(closestToPlayer);
+				}
+			}
+		}
+
+		//		if(!moving){
+		//			// we are not tracking down a loose ball, so mark the closest player
+		//			for(Player p : playerTeam){
+		//				if(!p.isMarked){
+		//					// this player
+		//					for(Player p : cpuTeam){
+		//						closest &= distToBall <= p.distToBall();
+		//						if(!closest){
+		//							break;
+		//						}
+		//					}
+		//				}
+		//			}
+		//		}
+	}
+
 	private void checkButtons() {
 		activeMode = "";
 
@@ -254,13 +324,19 @@ public class GameState implements State {
 			}
 		} else if(buttons[1].isActive()){
 			// clear
-			selectedPlayer.getInstructions().clear();
+			if(selectedPlayer != null){
+				selectedPlayer.getInstructions().clear();
+			}
 			buttons[1].setActive(false);
 		} else if(buttons[2].isActive()){
-			int res = -1; 
+			int res = -1;
 			do{
 				try{
-					res = Integer.parseInt(JOptionPane.showInputDialog(null, "How many seconds to wait for?", 1));
+					String ans = JOptionPane.showInputDialog(null, "How many seconds to wait for?", 1);
+					if(ans == null || ans.trim().length() < 0 || "".equals(ans.trim())){
+						break;
+					}
+					res = Integer.parseInt(ans.trim());
 				} catch(NumberFormatException e){
 					// doesn't matter
 				}
@@ -312,14 +388,21 @@ public class GameState implements State {
 	}
 
 	@Override
-	public void mouseClicked(int x, int y) {
-		if(done){
-			game.reset();
-			return;
+	public void mouseClicked(int x, int y, boolean rightClick) {
+		if(Configuration.DEBUGGING){
+			System.out.println((x-offset)+", " + (y-offset));
 		}
-		
+
+		if(done){
+			if(playerScored){
+				game.reset();
+			} else {
+				this.reset();
+			}
+		}
+
 		// clear everything first
-		if(x > offset && x < offset + 512 && y > offset && y < offset + 550){
+		if(!rightClick && (x > offset && x < offset + 512 && y > offset && y < offset + 550)){
 			if(!playing && "".equals(activeMode)){
 				for(Player p : playerTeam){
 					p.setSelected(false);
@@ -339,7 +422,7 @@ public class GameState implements State {
 		}
 
 		if(!playing){
-			if(x > offset && x < offset + 512 && y > offset && y < offset + 550){
+			if(!rightClick && (x > offset && x < offset + 512 && y > offset && y < offset + 550)){
 				if("".equals(activeMode)){
 					for(Player p : playerTeam){
 						if(p.clickedOn(x-offset, y-offset)){
@@ -348,7 +431,7 @@ public class GameState implements State {
 						}
 					}
 				}
-			} else {
+			} else if(!rightClick){
 				for(Button b : buttons){
 					if(b.intersects(x, y)){
 						b.setActive(true);
@@ -358,6 +441,32 @@ public class GameState implements State {
 		}
 	}
 
+
+	public void reset() {
+		for (Player p : playerTeam) {
+			p.reset();
+		}
+		for (Player p : cpuTeam) {
+			p.reset();
+		}
+		keeper.reset();
+
+		ball.reset();
+
+		for (Button b : buttons) {
+			b.setActive(false);
+		}
+
+		this.activeMode = "";
+		this.commentary = CommentaryManager.getStartMessage();
+		this.done = false;
+		this.finished = false;
+		this.gameOver = false;
+		this.playerScored = false;
+		this.playing = false;
+		this.secondsElapsed = 0;
+		this.selectedPlayer = null;
+	}
 
 	public boolean getScenarioLoaded() {
 		return scenarioLoaded;

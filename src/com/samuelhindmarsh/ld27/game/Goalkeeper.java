@@ -1,6 +1,7 @@
 package com.samuelhindmarsh.ld27.game;
 
 import java.awt.Color;
+import java.util.Set;
 
 public class Goalkeeper extends Player {
 
@@ -8,5 +9,5 @@ public class Goalkeeper extends Player {
 		super(startX, startY, number, name, colour);
 	}
 
-	
+
 }
